@@ -1114,12 +1114,8 @@ EXCEPTION
         errcode := -3;
 END spSchedPastGames;
 ----------------------------------------------------------------------------------------
--------------------------------------------------------------------[Q11. sp: spWinningRateByTeam]
-CREATE OR REPLACE PROCEDURE spWinningRateByTeam (
-    tname in number,
-    errocde out number,
-    rate out number
-) AS
+-------------------------------------------------------------------[Q11. fnc: fncWinningRateByTeam]
+CREATE OR REPLACE FUNCTION fncWinningRateByTeam (tname varchar2) RETURN number IS
     winAtHome number := 0;
     winAtVisit number := 0;
     totalWins number := 0;
@@ -1131,17 +1127,18 @@ CREATE OR REPLACE PROCEDURE spWinningRateByTeam (
     totalgames number := totalWins + totalLoses;
     rate number := 0;
 BEGIN
+    
     -- calculate wins
     SELECT count(homescore)
         INTO winAtHome
     FROM vwSchedule
-    WHERE hometeamID = tid
+    WHERE TRIM(UPPER(hometeam)) = TRIM(UPPER(tname))
         AND homescore > visitscore;
     
     SELECT count(visitscore)
         INTO winAtVisit
     FROM vwSchedule 
-    WHERE visitteamID = tid
+    WHERE TRIM(UPPER(visitteam)) = TRIM(UPPER(tname))
         AND visitscore > homescore;
     totalWins := winAtHome + winAtVisit;
     
@@ -1149,13 +1146,13 @@ BEGIN
     SELECT count(homescore)
         INTO loseAtHome
     FROM vwSchedule
-    WHERE hometeamID = tid
+    WHERE TRIM(UPPER(hometeam)) = TRIM(UPPER(tname))
         AND homescore <= visitscore;
     
     SELECT count(visitscore)
         INTO loseAtVisit
     FROM vwSchedule 
-    WHERE visitteamID = tid
+    WHERE TRIM(UPPER(visitteam)) = TRIM(UPPER(tname))
         AND visitscore <= homescore;
     totalLoses := loseAtHome + loseAtVisit;
        
@@ -1164,10 +1161,12 @@ BEGIN
     RETURN ROUND(rate, 2);
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
-         errcode := -1;
+        rate := -1;
+        RETURN rate;
     WHEN OTHERS THEN
-         errcode := -3;
-END spWinningRateByTeam;
+        rate := -3;
+        RETURN rate;
+END fncWinningRateByTeam;
 --------------------------------------------------------------
 -- end of file
 --------------------------------------------------------------
